@@ -1,0 +1,570 @@
+import { useState, useMemo } from "react";
+
+// Встроенные данные шаблона MBTI (полные данные из MBTI.csv)
+const templateData = {
+  "1a": { E: 0, I: 1, S: 1, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "1b": { E: 1, I: 0, S: 0, N: 1, T: 0, F: 0, J: 0, P: 0 },
+  "2a": { E: 0, I: 1, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "2b": { E: 1, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "3a": { E: 0, I: 0, S: 1, N: 0, T: 1, F: 0, J: 1, P: 0 },
+  "3b": { E: 0, I: 0, S: 0, N: 1, T: 0, F: 1, J: 0, P: 1 },
+  "4a": { E: 0, I: 0, S: 0, N: 1, T: 0, F: 0, J: 0, P: 0 },
+  "4b": { E: 0, I: 0, S: 1, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "5a": { E: 1, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "5b": { E: 0, I: 1, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "6a": { E: 0, I: 1, S: 0, N: 0, T: 1, F: 0, J: 0, P: 0 },
+  "6b": { E: 1, I: 0, S: 0, N: 0, T: 0, F: 1, J: 0, P: 0 },
+  "7a": { E: 0, I: 0, S: 0, N: 1, T: 0, F: 0, J: 0, P: 0 },
+  "7b": { E: 0, I: 0, S: 1, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "8a": { E: 0, I: 1, S: 1, N: 0, T: 1, F: 0, J: 0, P: 0 },
+  "8b": { E: 1, I: 0, S: 0, N: 1, T: 0, F: 1, J: 0, P: 0 },
+  "9a": { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "9b": { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "10a": { E: 0, I: 0, S: 1, N: 0, T: 1, F: 0, J: 0, P: 0 },
+  "10b": { E: 0, I: 0, S: 0, N: 1, T: 0, F: 1, J: 0, P: 0 },
+  "11a": { E: 1, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "11b": { E: 0, I: 1, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "12a": { E: 0, I: 0, S: 0, N: 0, T: 0, F: 1, J: 0, P: 0 },
+  "12b": { E: 0, I: 0, S: 0, N: 0, T: 1, F: 0, J: 0, P: 0 },
+  "13a": { E: 0, I: 1, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "13b": { E: 1, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "14a": { E: 0, I: 0, S: 0, N: 1, T: 0, F: 1, J: 0, P: 0 },
+  "14b": { E: 0, I: 0, S: 1, N: 0, T: 1, F: 0, J: 0, P: 0 },
+  "15a": { E: 0, I: 1, S: 1, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "15b": { E: 1, I: 0, S: 0, N: 1, T: 0, F: 0, J: 0, P: 0 },
+  "16a": { E: 0, I: 0, S: 0, N: 0, T: 0, F: 1, J: 0, P: 0 },
+  "16b": { E: 0, I: 0, S: 0, N: 0, T: 1, F: 0, J: 0, P: 0 },
+  "17a": { E: 0, I: 0, S: 0, N: 1, T: 0, F: 0, J: 0, P: 0 },
+  "17b": { E: 0, I: 0, S: 1, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "18a": { E: 0, I: 1, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "18b": { E: 1, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "19a": { E: 1, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 1 },
+  "19b": { E: 0, I: 1, S: 0, N: 0, T: 0, F: 0, J: 1, P: 0 },
+  "20a": { E: 0, I: 0, S: 1, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "20b": { E: 0, I: 0, S: 0, N: 1, T: 0, F: 0, J: 0, P: 0 },
+  "21a": { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "21b": { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "22a": { E: 1, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "22b": { E: 0, I: 1, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "23a": { E: 0, I: 0, S: 1, N: 0, T: 0, F: 0, J: 1, P: 0 },
+  "23b": { E: 0, I: 0, S: 0, N: 1, T: 0, F: 0, J: 0, P: 1 },
+  "24a": { E: 0, I: 1, S: 1, N: 0, T: 1, F: 0, J: 0, P: 0 },
+  "24b": { E: 1, I: 0, S: 0, N: 1, T: 0, F: 1, J: 0, P: 0 },
+  "25a": { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "25b": { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "26a": { E: 0, I: 1, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "26b": { E: 1, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "27a": { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 1 },
+  "27b": { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 1, P: 0 },
+  "28a": { E: 0, I: 0, S: 1, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "28b": { E: 0, I: 0, S: 0, N: 1, T: 0, F: 0, J: 0, P: 0 },
+  "29a": { E: 0, I: 1, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "29b": { E: 1, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 },
+  "30a": { E: 0, I: 0, S: 0, N: 0, T: 0, F: 1, J: 0, P: 0 },
+  "30b": { E: 0, I: 0, S: 0, N: 0, T: 1, F: 0, J: 0, P: 0 }
+};
+
+// Score Test 1 answers (8 characters)
+function scoreTest1(answers) {
+  answers = answers.trim().toLowerCase();
+  const mapping = { 'a': '1', 'b': '2' };
+  let ansDigits = '';
+  
+  for (let ch of answers) {
+    ansDigits += mapping[ch] || ch;
+  }
+  
+  if (ansDigits.length !== 8) {
+    return { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
+  }
+  
+  const scores = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
+  
+  // Position 0: S vs N
+  if (['1', '2'].includes(ansDigits[0])) scores.S += 1;
+  else if (['4', '5'].includes(ansDigits[0])) scores.N += 1;
+  
+  // Position 1: I vs E
+  if (['1', '2'].includes(ansDigits[1])) scores.I += 1;
+  else if (['4', '5'].includes(ansDigits[1])) scores.E += 1;
+  
+  // Position 2: J vs P
+  if (['1', '2'].includes(ansDigits[2])) scores.J += 1;
+  else if (['4', '5'].includes(ansDigits[2])) scores.P += 1;
+  
+  // Position 4: F vs T
+  if (['1', '2'].includes(ansDigits[4])) scores.F += 1;
+  else if (['4', '5'].includes(ansDigits[4])) scores.T += 1;
+  
+  // Position 5: S vs N
+  if (['1', '2'].includes(ansDigits[5])) scores.S += 1;
+  else if (['4', '5'].includes(ansDigits[5])) scores.N += 1;
+  
+  return scores;
+}
+
+// Score Test 2 answers (30 characters)
+function scoreTest2(answers) {
+  if (answers.length !== 30) {
+    return { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
+  }
+  
+  const scores = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
+  
+  for (let i = 0; i < 30; i++) {
+    const key = `${i + 1}${answers[i]}`;
+    const item = templateData[key];
+    
+    if (item) {
+      scores.E += item.E;
+      scores.I += item.I;
+      scores.S += item.S;
+      scores.N += item.N;
+      scores.T += item.T;
+      scores.F += item.F;
+      scores.J += item.J;
+      scores.P += item.P;
+    }
+  }
+  
+  return scores;
+}
+
+// Calculate MBTI type from both tests
+function calculateMBTI(test1, test2) {
+  const score1 = scoreTest1(test1);
+  const score2 = scoreTest2(test2);
+  
+  const total = {
+    E: score1.E + score2.E,
+    I: score1.I + score2.I,
+    S: score1.S + score2.S,
+    N: score1.N + score2.N,
+    T: score1.T + score2.T,
+    F: score1.F + score2.F,
+    J: score1.J + score2.J,
+    P: score1.P + score2.P
+  };
+  
+  const type = [
+    total.E > total.I ? 'E' : 'I',
+    total.N > total.S ? 'N' : 'S',
+    total.T > total.F ? 'T' : 'F',
+    total.J > total.P ? 'J' : 'P'
+  ].join('');
+  
+  return type;
+}
+
+// Parse CSV file
+function parseCSV(csvString) {
+  const lines = csvString.trim().split("\n");
+  if (lines.length < 2) {
+    throw new Error("Неверный формат CSV файла");
+  }
+  
+  // Parse headers (handle quoted fields)
+  const headers = [];
+  let currentHeader = '';
+  let inQuotes = false;
+  for (let char of lines[0]) {
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      headers.push(currentHeader.trim());
+      currentHeader = '';
+    } else {
+      currentHeader += char;
+    }
+  }
+  headers.push(currentHeader.trim());
+  
+  // Find required columns
+  const test1Index = headers.findIndex(h => h.trim() === "Тест 1");
+  const test2Index = headers.findIndex(h => h.trim() === "Тест 2");
+  const resultIndex = headers.findIndex(h => h.trim() === "Результат MBTI");
+  
+  if (test1Index === -1 || test2Index === -1) {
+    throw new Error('Файл должен содержать колонки "Тест 1" и "Тест 2"');
+  }
+  
+  // Parse data rows
+  const data = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    
+    const fields = [];
+    let currentField = '';
+    let inQuotes = false;
+    for (let char of line) {
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        fields.push(currentField.trim());
+        currentField = '';
+      } else {
+        currentField += char;
+      }
+    }
+    fields.push(currentField.trim());
+    
+    // Ensure we have enough fields
+    while (fields.length < headers.length) {
+      fields.push('');
+    }
+    
+    const row = {};
+    headers.forEach((header, index) => {
+      row[header] = fields[index] || "";
+    });
+    
+    // Calculate MBTI if we have valid data
+    try {
+      const test1Val = row["Тест 1"] || "";
+      const test2Val = row["Тест 2"] || "";
+      
+      // Clean test1 value (extract only digits and a/b)
+      const cleanedTest1 = test1Val.replace(/[^0-9ab]/gi, '');
+      const cleanedTest2 = test2Val.replace(/[^ab]/gi, '').toLowerCase();
+      
+      if (cleanedTest1.length === 8 && cleanedTest2.length === 30) {
+        row["Результат MBTI"] = calculateMBTI(cleanedTest1, cleanedTest2);
+      } else {
+        row["Результат MBTI"] = cleanedTest1.length !== 8 
+          ? `Ошибка: Тест 1 имеет ${cleanedTest1.length} символов (нужно 8)` 
+          : `Ошибка: Тест 2 имеет ${cleanedTest2.length} символов (нужно 30)`;
+      }
+    } catch (e) {
+      row["Результат MBTI"] = `Ошибка расчёта: ${e.message}`;
+    }
+    
+    data.push(row);
+  }
+  
+  return { headers, data, resultIndex };
+}
+
+// Generate CSV content from processed data
+function generateCSV(headers, data) {
+  // Escape values that contain commas or quotes
+  const escapeValue = (value) => {
+    if (value.includes(',') || value.includes('"')) {
+      return `"${value.replace(/"/g, '""')}"`;
+    }
+    return value;
+  };
+  
+  let csvContent = headers.map(escapeValue).join(",") + "\n";
+  
+  data.forEach(row => {
+    const rowValues = headers.map(header => escapeValue(row[header] || ""));
+    csvContent += rowValues.join(",") + "\n";
+  });
+  
+  return csvContent;
+}
+
+export default function App() {
+  const [file, setFile] = useState(null);
+  const [results, setResults] = useState(null);
+  const [error, setError] = useState(null);
+  const [processing, setProcessing] = useState(false);
+  const [mbtiCounts, setMbtiCounts] = useState(null);
+
+  const readFile = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+  };
+
+  const handleFileChange = async (e) => {
+    const selectedFile = e.target.files[0];
+    if (!selectedFile) return;
+    
+    // Reset states
+    setResults(null);
+    setError(null);
+    setMbtiCounts(null);
+    
+    try {
+      const content = await readFile(selectedFile);
+      setFile(content);
+    } catch (err) {
+      setError(`Ошибка чтения файла: ${err.message}`);
+    }
+  };
+
+  const processFile = async () => {
+    if (!file) {
+      setError("Пожалуйста, загрузите файл с результатами тестов");
+      return;
+    }
+    
+    setProcessing(true);
+    setError(null);
+    
+    try {
+      const { headers, data, resultIndex } = parseCSV(file);
+      
+      // Calculate MBTI type counts
+      const counts = {};
+      data.forEach(row => {
+        const mbti = row["Результат MBTI"];
+        if (mbti && !mbti.startsWith("Ошибка") && !mbti.includes("Неверное")) {
+          counts[mbti] = (counts[mbti] || 0) + 1;
+        }
+      });
+      
+      setResults({ headers, data });
+      setMbtiCounts(counts);
+    } catch (err) {
+      setError(`Ошибка обработки: ${err.message}`);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const downloadResults = () => {
+    if (!results) return;
+    
+    try {
+      const csvContent = generateCSV(results.headers, results.data);
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute("href", url);
+      link.setAttribute("download", "students_res.csv");
+      link.style.visibility = "hidden";
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      setError(`Ошибка генерации файла: ${err.message}`);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-100 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-4 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-700">
+            Калькулятор типов MBTI
+          </h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            Загрузите файл с результатами профориентационного тестирования для автоматического расчета типов личности MBTI
+          </p>
+        </div>
+        
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-10 border border-gray-100">
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Файл с результатами тестов (содержит колонки "Тест 1" и "Тест 2")
+              </label>
+              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-indigo-400 transition-colors">
+                <div className="space-y-1 text-center">
+                  <svg
+                    className="mx-auto h-12 w-12 text-gray-400"
+                    stroke="currentColor"
+                    fill="none"
+                    viewBox="0 0 48 48"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <div className="flex text-sm text-gray-600">
+                    <label
+                      htmlFor="csv-file"
+                      className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+                    >
+                      <span>Загрузить файл</span>
+                      <input
+                        id="csv-file"
+                        name="csv-file"
+                        type="file"
+                        className="sr-only"
+                        accept=".csv"
+                        onChange={handleFileChange}
+                      />
+                    </label>
+                    <p className="pl-1">или перетащите файл</p>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Поддерживаются только CSV файлы
+                  </p>
+                  {file && (
+                    <p className="text-sm text-green-600 mt-2">
+                      ✓ Файл успешно загружен
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <button
+                onClick={processFile}
+                disabled={processing || !file}
+                className={`w-full flex justify-center py-4 px-6 border border-transparent rounded-xl shadow-sm text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all ${
+                  processing || !file
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-700 hover:to-purple-800 focus:ring-indigo-500"
+                }`}
+              >
+                {processing ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Обработка результатов...
+                  </span>
+                ) : (
+                  "Рассчитать типы MBTI"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        {error && (
+          <div className="mb-8 bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {results && (
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 mb-10">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 sm:mb-0">
+                  Результаты тестирования
+                </h2>
+                <button
+                  onClick={downloadResults}
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-xl shadow-sm text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="-ml-1 mr-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                  Скачать результаты (students_res.csv)
+                </button>
+              </div>
+            </div>
+            
+            <div className="overflow-x-auto max-h-[500px]">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50 sticky top-0 z-10">
+                  <tr>
+                    {results.headers.map((header, index) => (
+                      <th
+                        key={index}
+                        scope="col"
+                        className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider"
+                      >
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {results.data.map((row, rowIndex) => (
+                    <tr
+                      key={rowIndex}
+                      className={rowIndex % 2 === 0 ? "bg-white hover:bg-indigo-50" : "bg-gray-50 hover:bg-indigo-50"}
+                    >
+                      {results.headers.map((header, colIndex) => (
+                        <td
+                          key={colIndex}
+                          className={`px-6 py-4 whitespace-nowrap text-sm ${
+                            header === "Результат MBTI"
+                              ? row[header].startsWith("Ошибка")
+                                ? "text-red-600 font-medium"
+                                : "text-indigo-800 bg-indigo-50 font-bold"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {row[header]}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            {mbtiCounts && Object.keys(mbtiCounts).length > 0 && (
+              <div className="p-6 border-t border-gray-200">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">
+                  Статистика типов MBTI
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {Object.entries(mbtiCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([type, count]) => (
+                      <div
+                        key={type}
+                        className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-4 border border-indigo-100 text-center"
+                      >
+                        <div className="text-3xl font-bold text-indigo-800 mb-1">{type}</div>
+                        <div className="text-sm font-medium text-gray-600">
+                          {count} {count === 1 ? "участник" : count < 5 ? "участника" : "участников"}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
+        <div className="mt-8 text-center text-gray-600 max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-md border border-gray-100">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Инструкция по использованию</h3>
+          <ol className="text-left space-y-3 text-gray-700">
+            <li className="flex">
+              <span className="flex-shrink-0 h-6 w-6 rounded-full bg-indigo-100 text-indigo-800 flex items-center justify-center font-bold mr-3">1</span>
+              <span>Загрузите CSV файл с результатами тестов детей (должен содержать колонки "Тест 1" и "Тест 2")</span>
+            </li>
+            <li className="flex">
+              <span className="flex-shrink-0 h-6 w-6 rounded-full bg-indigo-100 text-indigo-800 flex items-center justify-center font-bold mr-3">2</span>
+              <span>Нажмите "Рассчитать типы MBTI"</span>
+            </li>
+            <li className="flex">
+              <span className="flex-shrink-0 h-6 w-6 rounded-full bg-indigo-100 text-indigo-800 flex items-center justify-center font-bold mr-3">3</span>
+              <span>Просмотрите результаты в таблице или скачайте обновленный CSV файл</span>
+            </li>
+            <li className="flex">
+              <span className="flex-shrink-0 h-6 w-6 rounded-full bg-indigo-100 text-indigo-800 flex items-center justify-center font-bold mr-3">4</span>
+              <span>Результаты будут автоматически записаны в колонку "Результат MBTI" (столбец AR)</span>
+            </li>
+          </ol>
+          <div className="mt-6 p-4 bg-indigo-50 rounded-lg border border-indigo-100 text-left">
+            <p className="font-medium text-indigo-900">
+              Примечание: Программа автоматически извлекает ответы из колонок "Тест 1" (столбец L) и "Тест 2" (столбец AQ), рассчитывает тип MBTI и записывает результат в колонку "Результат MBTI" (столбец AR).
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
